@@ -1,9 +1,9 @@
 # link-voyager
 
-The link voyager project
-Lenguaje: Java (7)
-Build System: Maven
-IDE: Netbeans
+* The link voyager project
+* Lenguaje: Java (7)
+* Build System: Maven
+* IDE: Netbeans
 
 ## Shallow description
 
