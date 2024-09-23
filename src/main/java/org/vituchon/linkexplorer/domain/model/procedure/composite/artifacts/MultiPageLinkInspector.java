@@ -15,7 +15,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.vituchon.linkexplorer.domain.model.procedure.composite.NullProcedureStatus;
 import org.vituchon.linkexplorer.domain.model.procedure.composite.SinglePageLinkInspector;
-import org.vituchon.util.google.ExecutorUtils;
 
 public class MultiPageLinkInspector implements GenericQueryableProcedure<String, HtmlMap> {
 
@@ -73,7 +72,7 @@ public class MultiPageLinkInspector implements GenericQueryableProcedure<String,
     private static final TimeUnit TIME_UNIT_AWAIT_FOR_TERMINATION = TimeUnit.MINUTES;
 
     private void fillMap() throws InterruptedException {
-        ExecutorService executorService = ExecutorUtils.newFixedThreadPool(MAX_INSPECTORS);
+        ExecutorService executorService = Executors.newFixedThreadPool(MAX_INSPECTORS);
         for (int i = 0; i < MAX_INSPECTORS; i++) {
             executorService.submit(new InspectorWorker(workerDirective, this));
         }
