@@ -6,8 +6,8 @@ package org.vituchon.linkvoyager.web.controllers;
  * and open the template in the editor.
  */
 import java.io.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
 import org.vituchon.linkexplorer.api.UrlExplorer;
 
 public class EntryServlet extends HttpServlet {

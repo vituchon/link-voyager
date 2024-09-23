@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.*;
-import org.vituchon.util.google.ExecutorUtils;
 
 /**
  * Coordinates the entire activy of exploring the links departing from a base url.
@@ -42,7 +41,7 @@ public class SinglePageLinkInspector implements GenericQueryableProcedure<String
     public Collection<String> inspect(String url) throws InspectionException {
         Throwable t = null;
         Collection<String> links = new ArrayList<>();
-        ExecutorService executorService = ExecutorUtils.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
             status.start();
             Future<String> urlFetchCall = executorService.submit(new UrlFetchCall(urlFetcher, url));

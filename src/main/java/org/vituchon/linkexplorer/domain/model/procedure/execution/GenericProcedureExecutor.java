@@ -10,7 +10,6 @@ import org.vituchon.linkexplorer.domain.model.procedure.ProcedureStatus;
 import org.vituchon.linkexplorer.domain.model.procedure.QueryableProcedure;
 import org.vituchon.linkexplorer.domain.model.procedure.composite.NullProcedureStatus;
 import java.util.concurrent.*;
-import org.vituchon.util.google.ExecutorUtils;
 
 /**
  * Leverages the task of invoking a procedure with an associated monitor object that tracks his progress updating the status that can be queried at any time.
@@ -40,7 +39,7 @@ public class GenericProcedureExecutor<I, O> {
     public void execute() {
         ProcedureCall<I> procedureCall = new ProcedureCall(genericProcedure, input);
         ProcedureStatusRefreshCall inspectStatusSneakCall = new ProcedureStatusRefreshCall(queryableProcedure, POLLING_PERIOD);
-        ExecutorService executorService = ExecutorUtils.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         procedureFuture = executorService.submit(procedureCall);
         executorService.submit(inspectStatusSneakCall);
         executorService.shutdown();
