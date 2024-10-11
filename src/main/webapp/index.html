@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Link Voyager</title>
+<style>
+body {
+	font-family: Arial, sans-serif;
+	margin: 20px;
+}
+
+#status {
+	margin-top: 20px;
+}
+
+input, button {
+	padding: 10px;
+	margin: 5px;
+}
+
+.loader {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	border: 2px solid #f3f3f3;
+	border-radius: 50%;
+	border-top: 2px solid #3498db;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin { 100% {
+	transform: rotate(360deg);
+}
+
+}
+svg {
+	border: 1px solid #ccc;
+	margin-top: 20px;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+	margin-top: 20px;
+}
+
+th, td {
+	border: 1px solid #000; /* Bordes de las celdas */
+	padding: 8px; /* Espaciado interno */
+	text-align: left; /* Alineación del texto */
+}
+
+tr:nth-child(even) {
+	background-color: #f2f2f2;
+	/* Color de fondo alternado para las filas */
+}
+</style>
+</head>
+<body>
+
+	<h1>
+		Hogar de las aves cartógrafas <a href="about.html"
+			style="font-size: 0.8em;">(Acerca de)</a>
+	</h1>
+	<h2>Se necesitan pájaros carpinteros</h2>
+
+	<form id="explore-form">
+		<label for="rootURL">URL:</label> <input type="text" id="rootURL"
+			placeholder="Ingresar URL" required> <label for="deep-select">Profundidad
+			de exploración:</label> <select name="deep" id="deep-select">
+			<option value="0">1 Página</option>
+			<option value="1">2 Páginas</option>
+			<option value="2" selected>3 Páginas</option>
+			<option value="3">4 Páginas</option>
+			<option value="4">5 Páginas</option>
+			<option value="5">6 Páginas</option>
+		</select>
+
+		<!-- Select para la cantidad de exploradoras -->
+		<label for="workers-select">Cantidad de exploradoras:</label> <select
+			name="workers" id="workers-select">
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+			<option value="5" selected>5</option>
+			<option value="6">6</option>
+			<option value="7">7</option>
+			<option value="8">8</option>
+			<option value="9">9</option>
+			<option value="10">10</option>
+		</select>
+
+		<button type="submit" id="explore-btn">Explorar!</button>
+		<br>
+		<p style="font-size: 0.7em; font-weight: bold;">Se pueden explorar
+			hasta 200 páginas...</p>
+	</form>
+
+	<button id="stop-btn" style="display: none;">
+		Detener actualización <small>(El proceso sigue igual)</small>
+	</button>
+
+	<div id="status"></div>
+	<div id="nodes-visited"></div>
+
+	<!-- SVG for the D3.js graph -->
+	<svg width="800" height="600"></svg>
+
+	<script src="https://d3js.org/d3.v6.min.js"></script>
+	<script>
+    let intervalId;
+    const svg = d3.select("svg");
+    let simulation;
+
+    // Función para limpiar el gráfico
+    function clearGraph() {
+      svg.selectAll("*").remove(); // Elimina todos los elementos en el SVG
+      if (simulation) {
+        simulation.stop(); // Detiene la simulación si está activa
+      }
+    }
+
+
+    function generateTableFromStringAndInsertIntoDOM(input) {
+
+    	function extractInputForTable(input) {
+    	    // Expresión regular para encontrar "Processing : <NUMERO>" y capturar el texto que sigue
+    	    const regex = /Procesing : \d*\s*/;
+
+    	    const match = input.match(regex); // Aplicar la regex al input
+
+    	    if (match) {
+    	        // Obtener el índice donde termina el match
+    	        const matchEndIndex = match.index + match[0].length;
+
+    	        // Retornar todo el texto después del número
+    	        return input.substring(matchEndIndex).trim();
+    	    } else {
+    	        return null; // Retornar null si no hay coincidencia
+    	    }
+    	}
+        // Dividir el input por el delimitador '|'
+        const inputForTable = extractInputForTable(input);
+        const elements = inputForTable.split('|')
+        elements.pop() // esta al dope
+        const pairs = []
+        for (let index = 0; index < elements.length; index = index + 2) {
+          const left = elements[index];
+          const right = elements[index+1];
+          pairs.push({left: left, right: right});
+        }
+
+        // Crear la tabla
+        const table = document.createElement('table');
+        table.setAttribute('id', 'explored-pages');
+        const tbody = document.createElement('tbody');
+
+        // Recorrer los pares y crear filas
+        pairs.forEach(pair => {
+            const row = document.createElement('tr');
+            const cell1 = document.createElement('td');
+            cell1.textContent = pair.left; // Asignar el texto del par a la celda
+            row.appendChild(cell1); // Agregar la celda a la fila
+            const cell2 = document.createElement('td');
+            cell2.textContent = pair.right; // Asignar el texto del par a la celda
+            row.appendChild(cell2); // Agregar la celda a la fila
+            tbody.appendChild(row); // Agregar la fila al cuerpo de la tabla
+        });
+
+        table.appendChild(tbody); // Agregar el cuerpo a la tabla
+        const nodesVisitedHtmlElement = document.getElementById('nodes-visited')
+        nodesVisitedHtmlElement.innerHTML = "";
+        nodesVisitedHtmlElement.appendChild(table);
+    }
+
+    document.getElementById('explore-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = '<p>Enviando petición...</p>';
+
+      const stopBtn = document.getElementById('stop-btn');
+      const exploreBtn = document.getElementById('explore-btn');
+      exploreBtn.style.display = 'none';
+      stopBtn.style.display = 'block';
+
+      clearGraph(); // Limpia el gráfico antes de la nueva solicitud
+      // Elimina la tabla existente si la hay
+      const existingTable = document.getElementById('explored-pages');
+      if (existingTable) {
+        existingTable.remove();
+      }
+
+      try {
+      const rootURL = document.getElementById('rootURL').value;
+    	const exploreDeep = document.getElementById('deep-select').value;
+    	const exploreWorkers = document.getElementById('workers-select').value;
+        // First API call to start exploration
+        const response = await fetch(`/link-voyager-maven/explorer?rootURL=${encodeURIComponent(rootURL)}&deep=${exploreDeep}&workers=${exploreWorkers}`);
+        const textResponse = await response.text();
+
+        // Extract the UUID from the response
+        const uuidMatch = textResponse.match(/([a-f0-9-]{36})/);
+        if (uuidMatch) {
+          const uuid = uuidMatch[0];
+          statusDiv.innerHTML = `<p>Exploration queued with UUID: ${uuid}</p>`;
+
+          // Show the stop button to allow the user to stop polling
+          stopBtn.style.display = 'block';
+
+          // Polling every second to check status using the UUID
+          intervalId = setInterval(async function() {
+
+            const statusResponse = await fetch(`/link-voyager-maven/explorer?uuid=${uuid}`);
+            const statusText = await statusResponse.text();
+            generateTableFromStringAndInsertIntoDOM(statusText)
+
+            // Display the updated status
+            statusDiv.innerHTML = "";
+
+            // Stop polling if exploration is completed
+            if (statusText.includes("_In phase_  : DONE")) {
+              clearInterval(intervalId);
+              statusDiv.innerHTML = "<p>Exploration completed!</p>";
+              stopBtn.style.display = 'none';
+              exploreBtn.style.display = 'inline-block';
+
+              // Fetch the links using the uuidJSON endpoint
+              const jsonResponse = await fetch(`/link-voyager-maven/explorer?uuidJson=${uuid}`);
+              const links = await jsonResponse.json();
+
+
+				links.forEach(link => {
+				  if (link.source === rootURL) {
+				      link.level = 1;  // Arista de nivel 1
+				  } else if (links.some(l => (l.source === rootURL) && l.target === link.source)) {
+				      link.level = 2;  // Arista de nivel 2
+				  }
+				});
+              drawGraph(links);
+            } else {
+              statusDiv.innerHTML += `<span class="loader"></span> Checking status...<br/>`;
+            }
+          }, 1000); // 1 second interval
+        } else {
+          statusDiv.innerHTML = `<p>Error: No se pudo extraer UUID de la respuesta.</p><p>Respuesta: ${textResponse}</p>`;
+          exploreBtn.style.display = 'inline-block';
+        }
+
+      } catch (error) {
+        statusDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+        exploreBtn.style.display = 'inline-block';
+      }
+    });
+
+    // Function to stop the polling
+    document.getElementById('stop-btn').addEventListener('click', function() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        document.getElementById('status').innerHTML += '<p>Actualización detenida.</p>';
+        this.style.display = 'none';  // Hide the stop button after stopping
+      }
+    });
+
+    // D3.js graph drawing function
+    function drawGraph(links) {
+    	const width = 800;  // Define el ancho del SVG
+    	const height = 600; // Define el alto del SVG
+
+    	const svg = d3.select("svg")
+    	    .attr("width", width)
+    	    .attr("height", height);
+
+    	// Crear un grupo para el gráfico
+    	const g = svg.append("g");
+
+    	// Define la simulación con fuerza
+    	simulation = d3.forceSimulation()
+          .force("link", d3.forceLink().id(d => d.id).distance(30))
+    	    .force("charge", d3.forceManyBody().strength(-100))
+    	    .force("center", d3.forceCenter(width / 2, height / 2))
+          .force("collide", d3.forceCollide().radius(d => d.size + 5))
+
+
+    	const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(id => ({ id }));
+
+    	// Dibujar las flechas (marcadores de punta de flecha)
+    	/*g.append("defs").selectAll("marker")
+    	    .data(["end"]) // Marca el final de las líneas
+    	    .enter().append("marker")
+    	    .attr("id", "arrow")
+          .attr("class", "arrow")
+    	   .attr("viewBox", "0 -5 10 10")
+    	    .attr("refX", 20)
+    	    .attr("refY", 0)
+    	    .attr("markerWidth",  10)
+    	    .attr("markerHeight", 10)
+    	    .attr("orient", "auto")
+    	  	.append("path")
+    	    .attr("d", "M0,-5L10,0L0,5")
+    	    .attr("class", "arrow")*/
+    	 // Definir el marcador de flecha
+    	    svg.append("defs").append("marker")
+    	        .attr("id", "arrow")
+    	        .attr("viewBox", "0 -5 10 10")
+    	        .attr("refX", 16)  // Posición de la flecha respecto al enlace
+    	        .attr("refY", 0)
+    	        .attr("markerWidth", 6)
+    	        .attr("markerHeight", 6)
+    	        .attr("orient", "auto")
+    	        .append("path")
+    	        .attr("d", "M0,-5L10,0L0,5")  // Definición de la flecha en forma de triángulo
+    	        .attr("fill", "black");  // Color de la flecha
+
+
+    	// Dibuja los enlaces (links) como líneas
+    	const link = g.append("g")
+    	    .attr("class", "links")
+          .selectAll("line")
+          .data(links)
+          .enter().append("line")
+    	    .attr("class", "link")
+    	    //.attr("stroke", "black")
+		    .style("stroke", function(d) {
+		        if (d.level === 1) {
+		            return "red";  // Color para enlaces de nivel 1
+		        } else if (d.level === 2) {
+		            return "blue";  // Color para enlaces de nivel 2
+		        } else {
+		            return "gray";  // Color para otros enlaces si lo deseas
+		        }
+		    })
+          	.attr("stroke-width", d => Math.sqrt(d.value))
+    	    .attr("marker-end", "url(#arrow)");
+
+    	// Dibuja los nodos como círculos
+    	const node = g.append("g")
+    	    .attr("class", "nodes")
+    	  .selectAll("circle")
+    	  .data(nodes)
+    	  .enter().append("circle")
+    	    .attr("class", "node")
+    	    .attr("r", 5)
+    	    .call(d3.drag() // Habilitar el arrastre en los nodos
+    	      .on("start", dragstarted)   // Al comenzar el arrastre
+    	      .on("drag", dragged)        // Durante el arrastre
+    	      .on("end", dragended));     // Al finalizar el arrastre
+
+    	// Agrega etiquetas de texto a los nodos
+    	const label = g.append("g")
+    	    .attr("class", "labels")
+          .selectAll("text")
+          .data(nodes)
+          .enter().append("text")
+          .attr("dy", -10)  // Ajusta la posición vertical del texto
+          .attr("font-size", "8px")  // Cambia el tamaño de la fuente
+          .attr("text-anchor", "middle")
+          .text(d => d.id);
+
+    	// Actualiza la simulación en cada tick
+    	simulation
+    	  .nodes(nodes)
+    	  .on("tick", ticked);
+
+    	simulation.force("link")
+    	  .links(links);
+
+    	// Configurar la escala del zoom
+    	const zoom = d3.zoom()
+    	    .scaleExtent([0.1, 5])  // Limita el rango de escalado
+    	    .on("zoom", (event) => {
+    	        g.attr("transform", event.transform);
+    	    });
+
+    	// Aplicar el zoom al SVG
+    	svg.call(zoom);
+
+    	function ticked() {
+    	  link
+    	      .attr("x1", d => d.source.x)
+    	      .attr("y1", d => d.source.y)
+    	      .attr("x2", d => d.target.x)
+    	      .attr("y2", d => d.target.y);
+
+    	  node
+    	      .attr("cx", d => d.x)
+    	      .attr("cy", d => d.y);
+
+    	  label
+    	      .attr("x", d => d.x)
+    	      .attr("y", d => d.y);
+    	}
+
+    	// Funciones para el arrastre de nodos
+    	function dragstarted(event, d) {
+    	  if (!event.active) simulation.alphaTarget(0.3).restart();
+    	  d.fx = d.x;
+    	  d.fy = d.y;
+    	}
+
+    	function dragged(event, d) {
+    	  d.fx = event.x;
+    	  d.fy = event.y;
+    	}
+
+    	function dragended(event, d) {
+    	  if (!event.active) simulation.alphaTarget(0);
+    	  d.fx = null;
+    	  d.fy = null;
+    	}
+
+    }
+  </script>
+
+</body>
+</html>
