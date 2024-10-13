@@ -50,18 +50,16 @@ table {
 	width: 100%;
 	margin-top: 20px;
 
+  /* thanks https://stackoverflow.com/a/6667942/903998for the tips */
   table-layout: fixed;
-
-  /* thanks https://stackoverflow.com/a/19623358/903998 for the tips */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 th, td {
-	border: 1px solid #000; /* Bordes de las celdas */
-	padding: 8px; /* Espaciado interno */
-	text-align: left; /* Alineación del texto */
+	border: 1px solid #000;
+	padding: 8px;
+	text-align: left;
+  /* thanks https://stackoverflow.com/a/6667942/903998for the tips */
+  word-wrap:break-word;
 }
 
 tr:nth-child(even) {
@@ -94,8 +92,8 @@ select:focus, input:focus {
 
 		<label for="deep-select">Profundidad de exploración:</label>
 		<select name="deep" id="deep-select">
-			<option value="0">1 Página</option>
-			<option value="1" selected>2 Páginas</option>
+			<option value="0" selected>1 Página</option>
+			<option value="1">2 Páginas</option>
 			<option value="2">3 Páginas</option>
 			<option value="3">4 Páginas</option>
 			<option value="4">5 Páginas</option>
@@ -116,7 +114,7 @@ select:focus, input:focus {
 	</button>
 
 	<div id="status"></div>
-	<div id="nodes-visited"></div>
+	<div id="pages-discovered-div"></div>
 
 	<!-- SVG for the D3.js graph -->
 	<svg id="map-visualizer"></svg>
@@ -126,56 +124,53 @@ select:focus, input:focus {
     const svgSelector = "#map-visualizer"
     MapVisualizer.init(svgSelector)
 
-    function generateTableFromStringAndInsertIntoDOM(input) {
-
-    	function extractInputForTable(input) {
-    	    // Expresión regular para encontrar "Processing : <NUMERO>" y capturar el texto que sigue
-    	    const regex = /Procesing : \d*\s*/;
-
-    	    const match = input.match(regex); // Aplicar la regex al input
-
-    	    if (match) {
-    	        // Obtener el índice donde termina el match
-    	        const matchEndIndex = match.index + match[0].length;
-
-    	        // Retornar todo el texto después del número
-    	        return input.substring(matchEndIndex).trim();
-    	    } else {
-    	        return null; // Retornar null si no hay coincidencia
-    	    }
-    	}
-        // Dividir el input por el delimitador '|'
-        const inputForTable = extractInputForTable(input);
-        const elements = inputForTable.split('|')
-        elements.pop() // esta al dope
-        const pairs = []
-        for (let index = 0; index < elements.length; index = index + 2) {
-          const left = elements[index];
-          const right = elements[index+1];
-          pairs.push({left: left, right: right});
-        }
-
-        // Crear la tabla
+    function generateTableAndInsertIntoDOM(status) {
         const table = document.createElement('table');
-        table.setAttribute('id', 'explored-pages');
+        table.setAttribute('id', 'pages-discovered-table');
         const tbody = document.createElement('tbody');
 
-        // Recorrer los pares y crear filas
-        pairs.forEach(pair => {
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = ['URL', 'Fase', 'Progreso', 'Are we cool?'];
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        function insertCell(row, text) {
+          const cell = document.createElement('td');
+          cell.textContent = text;
+          row.appendChild(cell);
+        }
+        status.pages.forEach(page => {
             const row = document.createElement('tr');
-            const cell1 = document.createElement('td');
-            cell1.textContent = pair.left; // Asignar el texto del par a la celda
-            row.appendChild(cell1); // Agregar la celda a la fila
-            const cell2 = document.createElement('td');
-            cell2.textContent = pair.right; // Asignar el texto del par a la celda
-            row.appendChild(cell2); // Agregar la celda a la fila
-            tbody.appendChild(row); // Agregar la fila al cuerpo de la tabla
+            insertCell(row, page.url)
+            insertCell(row, page.status.phase)
+            const isDone = page.status.phase === "DONE"
+            var progress = "🥴%"
+            if (isDone) {
+              progress = 100 + "%"
+            } else if (page.status.progress?.percentaje) {
+              progress = page.status.progress.percentaje + "%"
+            }
+            insertCell(row, progress)
+            var cool = ""
+            if (page.status.throwable) {
+              cool = "❌:" + JSON.stringify(page.status.throwable)
+            } else if (isDone) {
+              cool = "🆒";
+            }
+            insertCell(row,cool)
+            tbody.appendChild(row);
         });
 
-        table.appendChild(tbody); // Agregar el cuerpo a la tabla
-        const nodesVisitedHtmlElement = document.getElementById('nodes-visited')
-        nodesVisitedHtmlElement.innerHTML = "";
-        nodesVisitedHtmlElement.appendChild(table);
+        table.appendChild(tbody);
+        const pagesDiscoveredHtmlElement = document.getElementById("pages-discovered-div")
+        pagesDiscoveredHtmlElement.innerHTML = "";
+        pagesDiscoveredHtmlElement.appendChild(table);
     }
 
     document.getElementById('explore-form').addEventListener('submit', async function(event) {
@@ -191,7 +186,7 @@ select:focus, input:focus {
 
       MapVisualizer.clearGraph(); // Limpia el gráfico antes de la nueva solicitud
       // Elimina la tabla existente si la hay
-      const existingTable = document.getElementById('explored-pages');
+      const existingTable = document.getElementById('pages-discovered-table');
       if (existingTable) {
         existingTable.remove();
       }
@@ -209,12 +204,12 @@ select:focus, input:focus {
           statusDiv.innerHTML = `<span>Explorando&nbsp;</span><span class="loader"></span><br/>`;
 
           intervalId = setInterval(async function() {
-            const statusText = await LinkVoyager.DefaultApi.checkStatus(uuid)
-            generateTableFromStringAndInsertIntoDOM(statusText)
-            if (statusText.includes("_In phase_  : DONE")) {
+            const status = await LinkVoyager.DefaultApi.checkStatus(uuid)
+            generateTableAndInsertIntoDOM(status)
+            if (status.phase === "DONE") {
               clearInterval(intervalId);
 
-              statusDiv.innerHTML = "<p>Exploración completa!</p>";
+              statusDiv.innerHTML = `<p>Exploración completa! <b>${status.pagesDiscovered}</b> página(s) descubierta(s)</p>`;
 
               stopBtn.style.display = 'none';
               exploreBtn.style.display = 'inline-block';

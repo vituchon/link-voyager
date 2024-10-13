@@ -53,7 +53,7 @@ public class SinglePageLinkInspectorStatus extends AbstractProcedureStatus imple
     public Throwable getThrowable() {
         return throwable;
     }
-    
+
 
     @Override
     public boolean isDone() {
@@ -67,10 +67,27 @@ public class SinglePageLinkInspectorStatus extends AbstractProcedureStatus imple
 
     @Override
     public String toString() {
+        StringBuilder json = new StringBuilder();
 
-        return String.format("In phase %s -> %d of %d : %d%%.%s", 
-                this.phase, this.discreteProcedureStatus.getCurrent(), 
-                this.discreteProcedureStatus.getTotal(), this.discreteProcedureStatus.getPercentaje(), 
-                this.throwable != null ? " Aborted due to : " +  this.throwable.getMessage() : "");
+        json.append("{");
+        json.append("\"phase\": \"").append(this.phase).append("\", ");
+
+        json.append("\"progress\": {");
+        json.append("\"current\": ").append(this.discreteProcedureStatus.getCurrent()).append(", ");
+        json.append("\"total\": ").append(this.discreteProcedureStatus.getTotal()).append(", ");
+        json.append("\"percentaje\": ").append(this.discreteProcedureStatus.getPercentaje());
+        json.append("}, ");
+
+        if (this.throwable != null) {
+            json.append("\"throwable\": {");
+            json.append("\"message\": \"").append(this.throwable.getMessage()).append("\"");
+            json.append("}");
+        } else {
+            json.append("\"throwable\": null");
+        }
+
+        json.append("}");
+
+        return json.toString();
     }
 }

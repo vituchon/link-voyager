@@ -78,7 +78,7 @@ var LinkVoyager;
     async checkStatus(uuid) {
       try {
         const response = await fetch(`${this.serverRootUrl}/explorer?uuid=${uuid}`);
-        return await response.text();
+        return await response.json();
       } catch (error) {
         console.error("Error en checkStatus:", error);
         throw error;
@@ -88,7 +88,9 @@ var LinkVoyager;
     async getLinks(uuid, rootUrl) {
       try {
         const response = await fetch(`${this.serverRootUrl}/explorer?uuidJson=${uuid}`);
-        const links = await response.json();
+        const responseText = await response.text();
+        console.debug(responseText)
+        const links = JSON.parse(responseText)
         levelize(links, rootUrl)
         return links
       } catch (error) {

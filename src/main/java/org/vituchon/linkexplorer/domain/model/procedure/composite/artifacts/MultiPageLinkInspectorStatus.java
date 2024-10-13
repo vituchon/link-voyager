@@ -57,15 +57,28 @@ public class MultiPageLinkInspectorStatus extends AbstractProcedureStatus implem
 
     @Override
     public String toString() {
-        final String endLine = System.lineSeparator();
-        StringBuilder sb = new StringBuilder();
-        Set<Entry<String, ProcedureStatus>> inspectionSet = this.inspections.entrySet();
+      StringBuilder json = new StringBuilder();
+      Set<Entry<String, ProcedureStatus>> inspectionSet = this.inspections.entrySet();
 
-        sb.append("_In phase_  : ").append(this.phase).append(endLine);
-        sb.append("Procesing : ").append(inspectionSet.size()).append(endLine);
-        for (Entry<String, ProcedureStatus> inspection : inspectionSet) {
-            sb.append(String.format("\t%-100s|%-50s|", inspection.getKey(), inspection.getValue().toString())).append(endLine);
-        }
-        return sb.toString();
+      json.append("{");
+      json.append("\"phase\": \"").append(this.phase).append("\",");
+      json.append("\"pagesDiscovered\": ").append(inspectionSet.size()).append(",");
+
+      json.append("\"pages\": [");
+      for (Entry<String, ProcedureStatus> inspection : inspectionSet) {
+          json.append("  {");
+          json.append("    \"url\": \"").append(inspection.getKey()).append("\",");
+          json.append("    \"status\": ").append(inspection.getValue().toString());
+          json.append("  },");
+      }
+      if (!inspectionSet.isEmpty()) {
+          json.setLength(json.length() - 1); // saca última coma
+      }
+
+      json.append("]");
+      json.append("}");
+
+      return json.toString();
     }
+
 }

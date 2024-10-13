@@ -16,7 +16,7 @@ public class NullProcedureStatus implements ProcedureStatus {
 
     protected NullProcedureStatus() {
     }
-    
+
     @Override
     public boolean isDone() {
         return false;
@@ -34,7 +34,7 @@ public class NullProcedureStatus implements ProcedureStatus {
 
     @Override
     public String toString() {
-        return "Null status";
+        return "\"Null status\"";
     }
 
 }
