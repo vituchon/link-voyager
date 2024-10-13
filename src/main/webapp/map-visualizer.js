@@ -1,192 +1,146 @@
 var MapVisualizer;
-(function (MapVisualizer) {
+(function(MapVisualizer) {
+  const width = 800;
+  const height = 600;
+
   let svg
   let simulation;
 
   function init(elementSelector) {
-    svg = d3.select(elementSelector);
+    svg = d3.select(elementSelector)
+      .attr("width", width)
+      .attr("height", height);
   }
 
-  // Función para limpiar el gráfico
   function clearGraph() {
-    svg.selectAll("*").remove(); // Elimina todos los elementos en el SVG
+    svg.selectAll("*").remove();
     if (simulation) {
-      simulation.stop(); // Detiene la simulación si está activa
+      simulation.stop();
     }
   }
 
-  // D3.js graph drawing function
   function drawGraph(links) {
-    const width = 800;  // Define el ancho del SVG
-    const height = 600; // Define el alto del SVG
+    const g = svg.append("g") // Crear un grupo para el gráfico;
 
-    const svg = d3.select("svg")
-        .attr("width", width)
-        .attr("height", height);
+    // thanks a lot https://observablehq.com/@ee2dev/d3-force-playground for allowing me to calibrate the visualization of this graph!
+    simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).distance(50))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("charge", d3.forceManyBody().strength(-20).distanceMin(20).distanceMax(150))
+      .force("collide", d3.forceCollide().strength(2).radius(50).iterations(10))
+      .alphaDecay(0.05)
 
-    // Crear un grupo para el gráfico
-    const g = svg.append("g");
+    const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(id => ({id}));
 
-    // Define la simulación con fuerza
-    /*simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(d => d.id).distance(30))
-    .force("charge", d3.forceManyBody()
-        .strength(-300)       // La fuerza de repulsión
-        .distanceMin(50)      // Distancia mínima a la que la fuerza tiene efecto
-        .distanceMax(200)     // Distancia máxima a la que la fuerza tiene efecto
-    )
-    .alphaDecay(0.05)  // Aumentar el decaimiento para que la simulación se detenga más rápido
-        .force("center", d3.forceCenter(width / 2, height / 2))
-        //.force("collide", d3.forceCollide().radius(d => d.size + 5))
-            .force("collide", d3.forceCollide(20))  // Aumentar el radio de colisión para evitar superposición
-  */
-
-  // thanks a lot https://observablehq.com/@ee2dev/d3-force-playground for allowing me to calibrate the visualization of this graph!
-  simulation =  d3.forceSimulation()
-  .force("link", d3.forceLink().id(d => d.id).distance(50))
-  .force("center", d3.forceCenter(width / 2, height / 2))
-  .force("charge", d3.forceManyBody().strength(-20).distanceMin(20).distanceMax(150))
-  .force("collide", d3.forceCollide().strength(2).radius(50).iterations(10))
-  .alphaDecay(0.05)
-
-    const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(id => ({ id }));
-
-    // Dibujar las flechas (marcadores de punta de flecha)
-    /*g.append("defs").selectAll("marker")
-        .data(["end"]) // Marca el final de las líneas
-        .enter().append("marker")
-        .attr("id", "arrow")
-        .attr("class", "arrow")
-       .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 20)
-        .attr("refY", 0)
-        .attr("markerWidth",  10)
-        .attr("markerHeight", 10)
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M0,-5L10,0L0,5")
-        .attr("class", "arrow")*/
-     // Definir el marcador de flecha
-        svg.append("defs").append("marker")
-            .attr("id", "arrow")
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 16)  // Posición de la flecha respecto al enlace
-            .attr("refY", 0)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M0,-5L10,0L0,5")  // Definición de la flecha en forma de triángulo
-            .attr("fill", "black");  // Color de la flecha
-
+    // Definir el marcador de flecha
+    svg.append("defs").append("marker")
+      .attr("id", "arrow")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 16) // Posición de la flecha respecto al enlace
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5") // Definición de la flecha en forma de triángulo
+      .attr("fill", "black"); // Color de la flecha
 
     // Dibuja los enlaces (links) como líneas
     const link = g.append("g")
-        .attr("class", "links")
-        .selectAll("line")
-        .data(links)
-        .enter().append("line")
-        .attr("class", "link")
-        //.attr("stroke", "black")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(links)
+      .enter().append("line")
+      .attr("class", "link")
       .style("stroke", function(d) {
-          if (d.level === 0) {
-              return "lightcoral";  // Color para enlaces de nivel 1
-          } else if (d.level === 1) {
-              return "blue";  // Color para enlaces de nivel 2
-          } else {
-              return "gray";  // Color para otros enlaces si lo deseas
-          }
+        if (d.level === 0) {
+          return "lightcoral"; // Color para enlaces de nivel 1
+        } else if (d.level === 1) {
+          return "blue"; // Color para enlaces de nivel 2
+        } else {
+          return "gray"; // Color para otros enlaces
+        }
       })
-          .attr("stroke-width", d => Math.sqrt(d.value))
-        .attr("marker-end", "url(#arrow)");
+      .attr("stroke-width", d => Math.sqrt(d.value))
+      .attr("marker-end", "url(#arrow)");
 
     // Dibuja los nodos como círculos
     const rootUrl = document.getElementById('rootUrl').value;
     const node = g.append("g")
-        .attr("class", "nodes")
+      .attr("class", "nodes")
       .selectAll("circle")
       .data(nodes)
       .enter().append("circle")
-        .attr("class", "node")
-        .attr("r", function(d) {
-          if (d.id === rootUrl) {
-              return 10;  // Tamaño mayor para el nodo raíz
-          } else {
-              return 5;   // Tamaño normal para los demás nodos
-          }
-        })
-        .style("fill", function(d) {
-            if (d.id === rootUrl) {
-                return "red";  // Color rojo para el nodo raíz
-            } else {
-                return "blue";  // Color para el resto de los nodos
-            }
-        })
-        .call(d3.drag() // Habilitar el arrastre en los nodos
-          .on("start", dragstarted)   // Al comenzar el arrastre
-          .on("drag", dragged)        // Durante el arrastre
-          .on("end", dragended));     // Al finalizar el arrastre
+      .attr("class", "node")
+      .attr("r", function(d) {
+        if (d.id === rootUrl) {
+          return 10; // Tamaño mayor para el nodo raíz
+        } else {
+          return 5; // Tamaño normal para los demás nodos
+        }
+      })
+      .style("fill", function(d) {
+        if (d.id === rootUrl) {
+          return "red"; // Color rojo para el nodo raíz
+        } else {
+          return "blue"; // Color para el resto de los nodos
+        }
+      })
+      .call(d3.drag() // Habilitar el arrastre en los nodos
+        .on("start", dragstarted) // Al comenzar el arrastre
+        .on("drag", dragged) // Durante el arrastre
+        .on("end", dragended)); // Al finalizar el arrastre
 
     // Agrega etiquetas de texto a los nodos
-    /*const label = g.append("g")
-        .attr("class", "labels")
-        .selectAll("text")
-        .data(nodes)
-        .enter().append("text")
-        .attr("dy", -10)  // Ajusta la posición vertical del texto
-        .attr("font-size", "8px")  // Cambia el tamaño de la fuente
-        .attr("text-anchor", "middle")
-        .text(d => d.id);*/
-
-        const label = g.append("g")
-        .attr("class", "labels")
-        .selectAll("text")
-        .data(nodes)
-        .enter().append("text")
-        .attr("class", "label")
-        .attr("dy", -10)  // Ajuste para mostrar el texto encima del nodo
-        .attr("text-anchor", "middle")
-        .style("font-size", "10px")  // Ajusta el tamaño del texto si es necesario
-        .style("display", "none")  // Inicialmente ocultos
-        .text(d => d.id);  // Mostrar el ID como texto
+    const label = g.append("g")
+      .attr("class", "labels")
+      .selectAll("text")
+      .data(nodes)
+      .enter().append("text")
+      .attr("class", "label")
+      .attr("dy", -10) // Ajuste para mostrar el texto encima del nodo
+      .attr("text-anchor", "middle")
+      .style("font-size", "10px") // Ajusta el tamaño del texto si es necesario
+      .style("display", "none") // Inicialmente ocultos
+      .text(d => d.id); // Mostrar el ID como texto
 
     // Mostrar/Ocultar textos cuando el mouse está sobre los nodos
     node.on("mouseover", function(event, d) {
         label.filter(n => n.id === d.id).style("display", "block");
-    })
-    .on("mouseout", function(event, d) {
+      })
+      .on("mouseout", function(event, d) {
         label.filter(n => n.id === d.id).style("display", "none");
-    });
+      });
 
     function getAdjacentNodes(selectedNodeId) {
-        // Obtener los nodos adyacentes a través de los enlaces
-        const adjacentNodes = link
-            .filter(l => l.source.id === selectedNodeId || l.target.id === selectedNodeId)
-            .data()
-            .map(l => l.source.id === selectedNodeId ? l.target.id : l.source.id);
+      // Obtener los nodos adyacentes a través de los enlaces
+      const adjacentNodes = link
+        .filter(l => l.source.id === selectedNodeId || l.target.id === selectedNodeId)
+        .data()
+        .map(l => l.source.id === selectedNodeId ? l.target.id : l.source.id);
 
-        adjacentNodes.push(selectedNodeId);
-        return adjacentNodes;
+      adjacentNodes.push(selectedNodeId);
+      return adjacentNodes;
     }
 
     // Función para mostrar solo nodos adyacentes
     function showAdjacentNodes(selectedNodeId) {
-        const adjacentNodes = getAdjacentNodes(selectedNodeId);
-        node.style("display", d => adjacentNodes.includes(d.id) ? "block" : "none");
+      const adjacentNodes = getAdjacentNodes(selectedNodeId);
+      node.style("display", d => adjacentNodes.includes(d.id) ? "block" : "none");
     }
 
     function showAllNodes() {
-        node.style("display", "block");
+      node.style("display", "block");
     }
 
     let showingAllNodes = true;
     node.on("click", function(event, d) {
-        if (showingAllNodes) {
-            showAdjacentNodes(d.id);  // Mostrar solo los adyacentes si todos están visibles
-        } else {
-            showAllNodes();  // Mostrar todos los nodos si los adyacentes están visibles
-        }
-        showingAllNodes = !showingAllNodes;  // Alternar estado
+      if (showingAllNodes) {
+        showAdjacentNodes(d.id); // Mostrar solo los adyacentes si todos están visibles
+      } else {
+        showAllNodes(); // Mostrar todos los nodos si los adyacentes están visibles
+      }
+      showingAllNodes = !showingAllNodes; // Alternar estado
     });
 
     simulation
@@ -197,27 +151,27 @@ var MapVisualizer;
       .links(links);
 
     const zoom = d3.zoom()
-        .scaleExtent([0.1, 5])
-        .on("zoom", (event) => {
-            g.attr("transform", event.transform);
-        });
+      .scaleExtent([0.1, 5])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
 
     svg.call(zoom);
 
     function ticked() {
       link
-          .attr("x1", d => d.source.x)
-          .attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x)
-          .attr("y2", d => d.target.y);
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 
       node
-          .attr("cx", d => d.x)
-          .attr("cy", d => d.y);
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
 
       label
-          .attr("x", d => d.x)
-          .attr("y", d => d.y);
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
     }
 
     // Funciones para el arrastre de nodos
@@ -244,5 +198,3 @@ var MapVisualizer;
   MapVisualizer.clearGraph = clearGraph;
   MapVisualizer.drawGraph = drawGraph;
 })(MapVisualizer || (MapVisualizer = {}));
-
-
