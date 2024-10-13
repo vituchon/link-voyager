@@ -34,7 +34,7 @@ public class UrlExplorer {
         this.maxDeep = maxDeep;
         this.root = root;
         this.workersDesired = workersDesired;
-        MultiPageLinkInspector inspector = new MultiPageLinkInspector(MaxDeepDirective.newInstance(maxDeep));
+        MultiPageLinkInspector inspector = new MultiPageLinkInspector(MaxDeepDirective.newInstance(maxDeep),workersDesired);
         this.executor = new GenericProcedureExecutor<>(inspector, root, new MultiPageListener(logger));
     }
 

@@ -19,22 +19,24 @@ import org.vituchon.linkexplorer.domain.model.procedure.composite.SinglePageLink
 public class MultiPageLinkInspector implements GenericQueryableProcedure<String, HtmlMap> {
 
     private static final int MAX_INSPECTIONS = 500;
-    private static final int MAX_INSPECTORS = 50;
+    private static final int MAX_WORKERS = 50;
     private final BlockingQueue<String> urlsToAnalize;
     private final MultiPageLinkInspectorStatus status;
     private final WorkerDirective workerDirective;
     private final AtomicInteger urlsInspectedCounter = new AtomicInteger(0);
+    private final int maxWorkers;
     private HtmlMap htmlMap;
 
     private static final Logger LOGGER = Logger.getLogger(MultiPageLinkInspector.class.getName());
 
-    public MultiPageLinkInspector(WorkerDirective workerDirective) {
+    public MultiPageLinkInspector(WorkerDirective workerDirective, int maxWorkers) {
         if (workerDirective == null) {
             throw new IllegalArgumentException("workerDirective can not be null");
         }
         this.urlsToAnalize = new LinkedBlockingDeque<>();
         this.status = new MultiPageLinkInspectorStatus();
         this.workerDirective = workerDirective;
+        this.maxWorkers = maxWorkers <= MAX_WORKERS ? maxWorkers : MAX_WORKERS;
     }
 
     @Override
@@ -72,8 +74,8 @@ public class MultiPageLinkInspector implements GenericQueryableProcedure<String,
     private static final TimeUnit TIME_UNIT_AWAIT_FOR_TERMINATION = TimeUnit.MINUTES;
 
     private void fillMap() throws InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(MAX_INSPECTORS);
-        for (int i = 0; i < MAX_INSPECTORS; i++) {
+        ExecutorService executorService = Executors.newFixedThreadPool(this.maxWorkers);
+        for (int i = 0; i < this.maxWorkers; i++) {
             executorService.submit(new InspectorWorker(workerDirective, this));
         }
         executorService.shutdown();
