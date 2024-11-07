@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Flashy</title>
+    <style>
+        form {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        label {
+            font-size: 1.5rem;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            background-color: #444;
+            color: white;
+            outline: none;
+            border: none;
+            cursor: pointer;
+            perspective: 500px;
+            transition: transform 0.5s ease;
+        }
+
+        select:hover {
+            transform: rotateY(360deg);
+        }
+
+        select option {
+            background-color: #222;
+            color: white;
+            padding: 10px;
+            animation: floatOption 2s ease-in-out infinite;
+        }
+
+        select option:nth-child(odd) {
+            animation-delay: 0.3s;
+        }
+
+        select option:nth-child(even) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes floatOption {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            animation: appear 0.5s ease-out;
+        }
+
+        @keyframes appear {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <form id="flashyForm">
+        <label for="selectCopado">¿Cómo se usa esta </label>
+        <select id="selectCopado">
+            <option value="poronga">Poronga</option>
+            <option value="mierda">Mierda</option>
+            <option value="app">App</option>
+            <option value="vitucheada">Vitucheada</option>
+        </select>
+    </form>
+
+    <dialog id="popupDialog">USANDOLA</dialog>
+
+    <script>
+        const selectElement = document.getElementById("selectCopado");
+        const dialog = document.getElementById("popupDialog");
+
+        selectElement.addEventListener("change", () => {
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        });
+    </script>
+</body>
+</html>
