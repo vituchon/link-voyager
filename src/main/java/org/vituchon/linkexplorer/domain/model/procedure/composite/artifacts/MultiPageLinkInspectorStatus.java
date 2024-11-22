@@ -62,7 +62,7 @@ public class MultiPageLinkInspectorStatus extends AbstractProcedureStatus implem
 
       json.append("{");
       json.append("\"phase\": \"").append(this.phase).append("\",");
-      json.append("\"pagesDiscovered\": ").append(inspectionSet.size()).append(",");
+      json.append("\"pagesAnalized\": ").append(inspectionSet.size()).append(",");
 
       json.append("\"pages\": [");
       for (Entry<String, ProcedureStatus> inspection : inspectionSet) {

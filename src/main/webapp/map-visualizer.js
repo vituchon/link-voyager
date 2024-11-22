@@ -32,6 +32,8 @@ var MapVisualizer;
 
     const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(id => ({id}));
 
+    //console.debug("nodes", nodes)
+
     // Definir el marcador de flecha
     svg.append("defs").append("marker")
       .attr("id", "arrow")
@@ -100,7 +102,7 @@ var MapVisualizer;
       .attr("class", "label")
       .attr("dy", -10) // Ajuste para mostrar el texto encima del nodo
       .attr("text-anchor", "middle")
-      .style("font-size", "10px") // Ajusta el tamaño del texto si es necesario
+      .style("font-size", "16px") // Ajusta el tamaño del texto si es necesario
       .style("display", "none") // Inicialmente ocultos
       .text(d => d.id); // Mostrar el ID como texto
 

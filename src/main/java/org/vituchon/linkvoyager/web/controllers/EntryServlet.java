@@ -11,7 +11,9 @@ import java.util.logging.Logger;
 import javax.servlet.http.*;
 import javax.servlet.*;
 
+import org.giordans.graphs.WeightedGraph;
 import org.vituchon.linkexplorer.api.UrlExplorer;
+import org.vituchon.linkexplorer.domain.model.procedure.ProcedureStatus;
 import org.vituchon.linkexplorer.domain.model.procedure.composite.artifacts.HtmlMap;
 
 public class EntryServlet extends HttpServlet {
@@ -44,18 +46,30 @@ public class EntryServlet extends HttpServlet {
                 String requestExploration = explorerAgengy.requestExploration(new ExplorerParameters(deep, workers, baseUrl));
                 writer.append("exploration queued : " + requestExploration);
             } else if (uuid != null) {
-            	UrlExplorer explorer = explorerAgengy.queryExploration(uuid);
-                writer.append(explorer.getLastStatus().toString());
+               	UrlExplorer explorer = explorerAgengy.queryExploration(uuid);
+                ProcedureStatus lastStatus = explorer.getLastStatus();
+                String jsonStatus = lastStatus.toString();
+                if (lastStatus.isDone()) {
+                  WeightedGraph<String>  map = explorer.getOutput().getMap();
+                  int nodesCount = map.getNodes().size();
+                  int edgesCount = map.getEdges().size();
+                  StringBuilder updatedStatus = new StringBuilder(jsonStatus);
+                  updatedStatus.insert(updatedStatus.length() - 1, ", \"nodesCount\": " + nodesCount + ", \"edgesCount\": " + edgesCount);
+                  jsonStatus = updatedStatus.toString();
+                }
+                response.setContentType("application/json");
+                writer.append(jsonStatus.toString());
             } else if (uuidJson != null) {
                 UrlExplorer explorer = explorerAgengy.queryExploration(uuidJson);
                 HtmlMap htmlMap = explorer.getOutput();
+                response.setContentType("application/json");
                 writer.append(htmlMap.toJsonString());
             } else {
                 writer.append("do get");
             }
         } catch (Exception e) {
-			e.printStackTrace();
-		}
+        e.printStackTrace();
+      }
     }
 
     private int parseOrDefault(String paramValue, int defaultValue, String paramName) {
