@@ -14,9 +14,9 @@
 
 ## Disclaimerships
 
-~For reasons I never updated it, it only works to explore sites on servers that do not have ssl certificates, ergo, only http protocol (without s)
+~For reasons I never updated it, it only works to explore sites on servers that do not have ssl certificates, ergo, only http protocol (without s)~
   
-This is "paperwork" that can be corrected with a little time...~
+~This is "paperwork" that can be corrected with a little time...~
 
 This is was certainly amended and now it can explore http and https sites as well! (As long the server bear with the requests)
   
