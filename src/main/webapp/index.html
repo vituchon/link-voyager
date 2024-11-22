@@ -82,7 +82,10 @@ select:focus, input:focus {
 <body>
 
 	<h1>
-		Hogar de las aves cartógrafas <a href="about.html" style="font-size: 0.8em;">(Acerca de)</a>  <a href="help.html" style="font-size: 0.8em;">(Ayuda)</a>
+		Hogar de las aves cartógrafas
+    <a href="about.html" style="font-size: 0.8em;">(Acerca de)</a>
+    <a href="help.html" style="font-size: 0.8em;">(Ayuda)</a>
+    <a href="birds-game.html" style="font-size: 0.8em;">(Sorpresa)</a>
 	</h1>
 	<h2>Se necesitan pájaros carpinteros</h2>
 
@@ -114,7 +117,7 @@ select:focus, input:focus {
 	</button>
 
 	<div id="status"></div>
-	<div id="pages-discovered-div"></div>
+	<div id="map-progress"></div>
 
 	<!-- SVG for the D3.js graph -->
 	<svg id="map-visualizer"></svg>
@@ -168,9 +171,9 @@ select:focus, input:focus {
         });
 
         table.appendChild(tbody);
-        const pagesDiscoveredHtmlElement = document.getElementById("pages-discovered-div")
-        pagesDiscoveredHtmlElement.innerHTML = "";
-        pagesDiscoveredHtmlElement.appendChild(table);
+        const mapProgress = document.getElementById("map-progress")
+        mapProgress.innerHTML = "";
+        mapProgress.appendChild(table);
     }
 
     document.getElementById('explore-form').addEventListener('submit', async function(event) {
@@ -193,8 +196,8 @@ select:focus, input:focus {
 
       try {
         const rootUrl = document.getElementById('rootUrl').value;
-    	  const exploreDeep = document.getElementById('deep-select').value;
-    	  const exploreWorkers = document.getElementById('workers-input').value;
+        const exploreDeep = document.getElementById('deep-select').value;
+        const exploreWorkers = document.getElementById('workers-input').value;
 
         const uuid = await LinkVoyager.DefaultApi.startExploration(rootUrl, exploreDeep, exploreWorkers)
         if (uuid) {
@@ -209,7 +212,7 @@ select:focus, input:focus {
             if (status.phase === "DONE") {
               clearInterval(intervalId);
 
-              statusDiv.innerHTML = `<p>Exploración completa! <b>${status.pagesDiscovered}</b> página(s) descubierta(s)</p>`;
+              statusDiv.innerHTML = `<p>Exploración completa! <b>${status.pagesAnalized}</b> página(s) analizada(s). ${status.nodesCount} páginas encontradas y ${status.edgesCount} enlaces descubiertos.</p>`;
 
               stopBtn.style.display = 'none';
               exploreBtn.style.display = 'inline-block';

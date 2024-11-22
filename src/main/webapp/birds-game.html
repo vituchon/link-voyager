@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pájaros volando</title>
+	<style>
+	body {
+		margin: 0;
+		height: 100vh;
+		overflow: hidden;
+		background-color: #87ceeb;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		position: relative;
+    flex-direction: column;
+	}
+
+	.bird {
+		position: absolute;
+		font-size: 24px;
+		user-select: none;
+		animation: rotate 2s linear infinite;
+    z-index: 2;
+	}
+
+	@keyframes rotate {
+		0% {
+			transform: rotate(0deg);
+		}
+
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+
+  #birds-cage {
+    width: 50%;
+    height: 50%;
+    background-color: lightgoldenrodyellow;
+    position: relative;
+  }
+	</style>
+</head>
+
+<body>
+  <div>
+
+  </div>
+  <h2>Mini juego avestronico</h2>
+  <span>Hacé click en el rectangulo abajo y cuando aparezcan las palomitas atrapalas haciendo click sobre ellas!... Cuantas más atrapés más aves cartógrafas tendras para explorar este nuevo mundo llamado WWW</span>
+  <a href="index.html">VOLVER</a>
+  <div id="birds-cage">
+    <div id="score" style=" position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: bold; color: lightcoral; z-index: 1;">
+    Puntaje: 0
+    </div>
+  </div>
+	<script>
+  function randomIntFromInterval(min, max) {
+    const diff = (max - min) + 1
+    return Math.floor(Math.random() * diff + min);
+  }
+  let score = 0;
+	const birdEmojis = ["🐦", "🦅", "🦜", "🐤"];
+	const birdsCount = 2;
+  const birdsCage = document.getElementById('birds-cage');
+
+  var birdsCageClientRect = birdsCage.getBoundingClientRect();
+	birdsCage.addEventListener('click', (e) => {
+		for(let i = 0; i < birdsCount; i++) {
+			let bird = document.createElement('div');
+			bird.classList.add('bird');
+			bird.textContent = birdEmojis[Math.floor(Math.random() * birdEmojis.length)];
+
+
+			bird.style.left = `${randomIntFromInterval(bird.offsetWidth, birdsCageClientRect.width - bird.offsetWidth)}px`;
+			bird.style.top = `${randomIntFromInterval(bird.offsetHeight, birdsCageClientRect.height - bird.offsetHeight)}px`;
+
+			birdsCage.appendChild(bird);
+
+			let targetX = e.offsetX + (Math.random() - 0.5) * 50;
+			let targetY = e.offsetY + (Math.random() - 0.5) * 50;
+
+			bird.style.transition = "all 2s ease-out";
+			bird.style.left = `${targetX - bird.offsetWidth / 2}px`;
+			bird.style.top = `${targetY - bird.offsetHeight / 2}px`;
+
+			bird.addEventListener('click', (e) => {
+				e.stopPropagation();
+
+        score += 10;
+        updateScore(score)
+
+				const computedStyle = window.getComputedStyle(bird);
+				const currentRotation = computedStyle.transform === 'none' ? 'rotate(0deg)' : computedStyle.transform;
+
+
+        bird.style.left = `${bird.offsetLeft}px`;
+        bird.style.top = `${bird.offsetTop}px`;
+
+				bird.style.transition = 'none';
+				bird.style.animation = 'none';
+				bird.style.filter = 'brightness(0.5)';
+				bird.style.transform = currentRotation;
+			})
+
+			setTimeout(() => {
+				bird.remove();
+			}, 5000);
+		}
+	});
+
+
+  function updateScore(newScore) {
+    /* no animation update
+        const scoreElement = document.getElementById('score');
+        scoreElement.textContent = `Puntaje: ${score}`;
+    */
+    const scoreElement = document.getElementById('score');
+    const currentScore = parseInt(scoreElement.textContent.replace('Puntaje: ', '')) || 0;
+
+    if (currentScore === newScore) return;
+
+    const steps = 30;
+    const increment = (newScore - currentScore) / steps;
+    let step = 0;
+    function animateScore() {
+        step++;
+        const interpolatedScore = Math.round(currentScore + increment * step);
+        scoreElement.textContent = `Puntaje: ${interpolatedScore}`;
+        if (step < steps) {
+            requestAnimationFrame(animateScore);
+        }
+    }
+    animateScore();
+  }
+	</script>
+</body>
+
+</html>
